@@ -9,6 +9,7 @@ import { vapi } from "@/lib/vapi.sdk";
 import { configureInterviewAssistant } from "@/lib/vapiAssitant";
 import { createFeedback } from "@/lib/interview.actions";
 
+
 enum CallStatus {
   INACTIVE = "INACTIVE",
   CONNECTING = "CONNECTING",
@@ -25,7 +26,7 @@ interface Message {
 interface AgentProps {
   userName: string;
   userId: string;
-  type: "generate" | "feedback";
+  profileURL: string;
   name: string;
   feedbackId: string;
   role: string;
@@ -66,6 +67,7 @@ const Agent = ({
   userName,
   role,
   interviewId,
+  profileURL,
   userId,
   difficulty,
   duration,
@@ -82,7 +84,11 @@ const Agent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [lastMessage, setLastMessage] = useState<string>("");
 
-
+  const redirectOnCallend = () => {
+    if (callStatus === CallStatus.FINISHED) {
+      router.push(`/interview/${interviewId}/feedback`)
+    }
+  }
 
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
@@ -95,6 +101,8 @@ const Agent = ({
         setLastMessage(message.transcript);
       }
     };
+
+
 
     const onSpeechStart = () => setIsSpeaking(true);
     const onSpeechEnd = () => setIsSpeaking(false);
@@ -125,7 +133,6 @@ const Agent = ({
 
     const onCallEnd = (endedReason?: any) => {
       console.log("📞 Call ended:", endedReason);
-
       // Log specific end reasons for debugging
       if (endedReason) {
         console.log("End reason details:", {
@@ -256,38 +263,23 @@ const Agent = ({
       alert(`Failed to start call: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     vapi.stop();
     setCallStatus(CallStatus.FINISHED);
 
+    const { success, feedbackId: id } = await createFeedback({
+      interviewId: interviewId!,
+      userId: userId!,
+      transcript: messages,
+    });
+
+    if (success && id) {
+      router.push(`/interview/${interviewId}/feedback`);
+    } else {
+      console.log("Error saving feedback");
+      router.push("/");
+    }
   };
-
-  // useEffect(() => {
-  //   const handleGenerateFeedback = async () => {
-  //     if (!messages.length) return;
-
-  //     console.log("🛠 Generating feedback...");
-  //     const { success, feedbackId: id } = await createFeedback({
-  //       interviewId,
-  //       userId,
-  //       transcript: messages,
-  //     });
-
-  //     if (success && id) {
-  //       router.push(`/interview/${interviewId}/feedback`);
-  //     } else {
-  //       router.push("/");
-  //     }
-  //   };
-
-  //   if (callStatus === CallStatus.FINISHED) {
-  //     handleGenerateFeedback();
-
-  //   }
-  // }, [callStatus, interviewId, userId, router,]);
-
-
-
 
 
 

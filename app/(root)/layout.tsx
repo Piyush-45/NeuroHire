@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ReactNode } from "react";
 import { getCurrentUser } from "@/lib/auth.actions";
-import { redirect } from "next/navigation";
 
 // import { isAuthenticated } from "@/lib/actions/auth.action";
 
@@ -20,7 +19,7 @@ const Layout = async ({ children }: { children: ReactNode }) => {
                 </Link>
 
                 {user ? (
-                    <Link href={"/"}>Account</Link>
+                    <Link href={"/account"}>Account</Link>
                 ) : (
                     <Link href={"/sign-up"}>Sign in</Link>
                 )}

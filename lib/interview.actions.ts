@@ -113,16 +113,25 @@ export async function createFeedback(params: CreateFeedbackParams) {
             }),
             schema: feedbackSchema,
             prompt: `
-          You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
-          Transcript:
-          ${formattedTranscript}
-  
-          Please score the candidate from 0 to 100 in the following areas. Do not add categories other than the ones provided:
-          - **Communication Skills**: Clarity, articulation, structured responses.
-          - **Technical Knowledge**: Understanding of key concepts for the role.
-          - **Problem-Solving**: Ability to analyze problems and propose solutions.
-          - **Cultural & Role Fit**: Alignment with company values and job role.
-          - **Confidence & Clarity**: Confidence in responses, engagement, and clarity.
+         You are an AI interviewer analyzing a mock interview. Your task is to critically evaluate the candidate’s performance across the categories below, based solely on the content of the transcript.
+
+If the candidate does not provide clear, complete, or relevant responses—even if the transcript is short—your analysis must reflect that. Avoid giving average or above-average scores without strong justification. Do not assume intent or skill—only evaluate what's clearly demonstrated.
+
+Your evaluation should be honest, fair, and grounded in realistic interview expectations. Be detailed and constructive in your feedback, pointing out specific weaknesses, gaps, or red flags. Also highlight strong moments, if any.
+
+Transcript:
+${formattedTranscript}
+
+Please score the candidate from 0 to 100 **in each** of the following categories. Justify each score with a paragraph that includes direct observations from the transcript. Do not add or remove categories.
+
+- **Communication Skills**: Clarity, structure, and articulation of responses.
+- **Technical Knowledge**: Understanding and application of key concepts relevant to the role.
+- **Problem-Solving**: Logical thinking, problem breakdown, and solution approach.
+- **Cultural & Role Fit**: Alignment with the company’s values, team compatibility, and suitability for the role.
+- **Confidence & Clarity**: Overall confidence in responses, self-assuredness, and how clearly ideas were expressed.
+
+End with a brief overall summary and recommendation (e.g., Strong candidate / Needs improvement / Not suitable yet).
+
           `,
             system:
                 "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
@@ -154,4 +163,22 @@ export async function createFeedback(params: CreateFeedbackParams) {
         console.error("Error saving feedback:", error);
         return { success: false };
     }
+}
+
+export async function getFeedbackByInterviewId(
+    params: GetFeedbackByInterviewIdParams
+): Promise<Feedback | null> {
+    const { interviewId, userId } = params;
+
+    const querySnapshot = await db
+        .collection("feedback")
+        .where("interviewId", "==", interviewId)
+        .where("userId", "==", userId)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.empty) return null;
+
+    const feedbackDoc = querySnapshot.docs[0];
+    return { id: feedbackDoc.id, ...feedbackDoc.data() } as Feedback;
 }
